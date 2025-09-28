@@ -2,13 +2,20 @@ import express from "express";
 import cors from "cors";
 import axios from "axios";
 import { GoogleGenAI } from "@google/genai";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: "https://reddit-thread-summarizer-esii.vercel.app",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
+  })
+);
+app.options("*", cors());
 app.use(express.json());
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -91,12 +98,10 @@ Please provide:
 
 Keep it very concise but informative. It should be quick to read.
         `;
-    const response = await ai.models.generateContent(
-      {
-        model: "gemini-2.5-flash-lite",
-        contents: prompt,
-      }
-    );
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash-lite",
+      contents: prompt,
+    });
     console.log("Gemini response:", JSON.stringify(response, null, 2));
 
     return response.candidates[0].content.parts[0].text;
