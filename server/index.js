@@ -1,7 +1,9 @@
-const express = require("express");
-const cors = require("cors");
-const axios = require("axios");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import axios from "axios";
+import { GoogleGenAI } from "@google/genai";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -9,7 +11,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 
-const apiKey = process.env.DEEPSEEK_API_KEY;
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 async function fetchRedditThread(url) {
   try {
@@ -82,36 +84,22 @@ ${commentsText}
 
 Please provide:
 1. MAIN SUMMARY (2-3 sentences about the post and overall discussion)
-2. KEY POINTS (3-5 bullet points of main arguments/ideas)
-3. POPULAR OPINIONS (what most people seem to agree on)
-4. CONTROVERSIAL TAKES (opposing viewpoints or debated points)
-5. OVERALL SENTIMENT (positive/negative/neutral and why)
+2. KEY POINTS (2-3 bullet points of main arguments/ideas)
+3. POPULAR OPINIONS (2 points what most people seem to agree on)
+4. CONTROVERSIAL TAKES (1-2 points of opposing viewpoints or debated points)
+5. OVERALL SENTIMENT (positive/negative/neutral and why 1-2 points)
 
-Keep it concise but informative.
+Keep it very concise but informative. It should be quick to read.
         `;
-    const completion = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
+    const response = await ai.models.generateContent(
       {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "deepseek/deepseek-chat-v3-0324:free",
-          messages: [
-            {
-              role: "user",
-              content: prompt,
-            },
-          ],
-        }),
+        model: "gemini-2.5-flash-lite",
+        contents: prompt,
       }
     );
-    const result = await completion.json();
-    console.log("OpenAI response:", JSON.stringify(result, null, 2));
+    console.log("Gemini response:", JSON.stringify(response, null, 2));
 
-    return result.choices[0].message.content;
+    return response.candidates[0].content.parts[0].text;
   } catch (error) {
     console.error("Error generating summary:", error);
     throw new Error("Failed to generate AI summary");
